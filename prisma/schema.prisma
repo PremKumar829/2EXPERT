@@ -1,0 +1,133 @@
+// This is the complete Prisma Schema for 2EXPERT Quick-Commerce & Local Delivery
+// Configured for PostgreSQL with relations for Products, Orders, Items, StoreSettings, and Digital Khata
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum OrderStatus {
+  PLACED
+  PACKING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  UPI
+  KHATA
+}
+
+enum TransactionType {
+  CREDIT   // Udhari added
+  PAYMENT  // Jama / payment received
+}
+
+model StoreSetting {
+  id                    String   @id @default("default")
+  isOpen                Boolean  @default(true)
+  closedMessage         String   @default("Currently Closed — Back Soon! For urgent inquiries, message us on WhatsApp.")
+  ownerPhone            String   @default("+918340701002")
+  storeAddress          String   @default("Shop No. 4, Main Market Road")
+  deliveryRadiusKm      Float    @default(5.0)
+  minOrderValue         Float    @default(99.0)
+  freeDeliveryThreshold Float    @default(199.0)
+  standardDeliveryFee   Float    @default(25.0)
+  estimatedTimeMins     Int      @default(15)
+  noticeBanner          String?
+  updatedAt             DateTime @updatedAt
+}
+
+model Product {
+  id                 String      @id @default(cuid())
+  name               String
+  category           String
+  price              Float
+  originalPrice      Float
+  unit               String
+  image              String
+  inStock            Boolean     @default(true)
+  stockCount         Int         @default(20)
+  description        String
+  isVeg              Boolean     @default(true)
+  discountPercentage Float       @default(0)
+  badge              String?
+  orderItems         OrderItem[]
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@index([category])
+  @@index([inStock])
+}
+
+model Order {
+  id                    String        @id @default(cuid())
+  orderNumber           String        @unique // e.g. "2EXP-9042"
+  customerName          String
+  customerPhone         String
+  deliveryAddress       String
+  landmark              String?
+  subtotal              Float
+  deliveryFee           Float
+  discount              Float         @default(0)
+  total                 Float
+  status                OrderStatus   @default(PLACED)
+  paymentMethod         PaymentMethod @default(COD)
+  orderNotes            String?
+  estimatedDeliveryMins Int           @default(15)
+  estimatedDeliveryTime DateTime?
+  items                 OrderItem[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  khataTransaction      KhataTransaction?
+
+  @@index([status])
+  @@index([customerPhone])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  total     Float
+}
+
+model KhataCustomer {
+  id           String             @id @default(cuid())
+  name         String
+  phone        String             @unique
+  address      String
+  totalDue     Float              @default(0)
+  notes        String?
+  transactions KhataTransaction[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([phone])
+}
+
+model KhataTransaction {
+  id          String          @id @default(cuid())
+  customerId  String
+  customer    KhataCustomer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type        TransactionType
+  amount      Float
+  description String
+  orderId     String?         @unique
+  order       Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now())
+
+  @@index([customerId])
+}

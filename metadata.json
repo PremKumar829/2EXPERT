@@ -1,0 +1,6 @@
+{
+  "name": "2EXPERT - Quick Commerce & Local Delivery",
+  "description": "Quick-Commerce & Local Delivery Web Application for 2EXPERT: Jo saman chahiye, bas message kariye. Featuring instant ordering, WhatsApp invoice, live status tracker, and admin khata.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
